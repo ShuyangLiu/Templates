@@ -174,7 +174,7 @@ public:
         	while(*(ptr+k*s) != item && *(ptr+k*s) != ((T) 0) && k<=H){
         		k++;
         	}
-        	if(k == H){
+        	if(k > H){
         		throw err;
         	}
         	else{
@@ -460,7 +460,7 @@ int main() {
     cout << "tue is " << (V->contains(tue)? "" : "not ") << "in V\n";
     cout << "wed is " << (V->contains(wed)? "" : "not ") << "in V\n";
     
-    hashed_simple_set<int, cast_to_int<int>> H(101);
+    hashed_simple_set<int, cast_to_int<int>> H(2);
     H += 101;
     cout << "101 is " << (H.contains(101)? "" : "not ") << "in H\n";
     H += 202;
