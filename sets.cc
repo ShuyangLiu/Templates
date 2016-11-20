@@ -249,6 +249,76 @@ private:
 
 //---------------------------------------------------------------
 
+template <typename T>
+class node{
+  public: 
+    const T& item;
+    node<T> *left, *right;
+    node(const T& i) : item(i), left(NULL), right(NULL) {}
+};
+
+template <typename T, typename C = comp<T>>
+class bin_search_tree{
+  public:
+    int size;
+    node<T> *head;
+    bin_search_tree() : head(NULL), size(0) {}
+    bin_search_tree<T,C>& insert(const T& i) {
+        head=insert(i, head);
+        return *this;
+    }
+    bool contains(const T& i) const {
+        return contains(i, head);
+    }
+    bin_search_tree<T,C>& remove(const T& i) {
+	head = remove(i, head);
+        return *this;
+    }
+  private:
+    node<T>* insert(const T& i, node<T>* current_node) {
+        if(current_node == NULL)  { size++; return new node<T>(i); }
+        if(current_node->item < i) current_node->right = insert(i, current_node->right); 
+	if(i < current_node->item) current_node->left = insert(i, current_node->left); 
+        return current_node;
+    }
+    bool contains(const T& i, node<T>* current_node) const {
+        if(current_node == NULL) return false;
+        else if (current_node->item == i) return true;
+        else if (current_node->item < i) return contains(i, current_node->right);
+        else if (i < current_node->item) return contains(i, current_node->left);
+    }
+    node<T>* remove(const T& i, node<T>* current_node) {
+        if(current_node == NULL) return current_node; // Error : element not in tree.
+        else if(current_node->item < i) current_node->right = remove(i, current_node->right);
+        else if(i < current_node->item) current_node->left = remove(i, current_node->left);
+        else {
+	    if(current_node->left == NULL && current_node->right == NULL) { free(current_node); return NULL; }
+            else if(current_node->left == NULL) { 
+                node<T>* replacement_node = current_node->right;
+                free(current_node);
+                return replacement_node;
+            } 
+            else if(current_node->right == NULL) { 
+                node<T>* replacement_node = current_node->left;
+                free(current_node);
+                return replacement_node;
+            } else {
+                node<T>* replacement_node = current_node->right;
+                while(replacement_node->left != NULL) {
+                    replacement_node = replacement_node->left;
+                }
+                node<T>* temp_node = new node<T>(replacement_node->item);
+                temp_node->left = current_node->left;
+                temp_node->right = current_node->right;
+                current_node = temp_node;
+                current_node->right = remove(replacement_node->item, replacement_node);
+            }
+        }
+        return current_node;
+    }
+};
+
+
 // Sorted array implementation of set; supports binary search.
 // Requires instantiation with guaranteed upper bound on number of
 // elements that may be placed in set.  Throws overflow if bound is
@@ -258,28 +328,33 @@ template<typename T, typename C = comp<T>>
 class bin_search_simple_set : public virtual simple_set<T> {
     // 'virtual' on simple_set ensures single copy if multiply inherited
     // You'll need some data members here.
+private:
+    const T max;
+    bin_search_tree<T, C> *tree;
+    static const overflow err;
 public:
     // and some methods
-    bin_search_simple_set(const T n){
+    bin_search_simple_set(const T n): max(n), tree(new bin_search_tree<T,C>) {
         //constructor
-        (void) n;
     }
 
-    virtual ~bin_search_simple_set(){}
-
-
-    virtual bin_search_simple_set<T>& operator+=(const T item) {
-        // replace this line:
-        (void) item;  return *this;
+    virtual ~bin_search_simple_set(){
     }
+
+    virtual bin_search_simple_set<T, C>& operator+=(const T item) {
+	if(tree->size == max) throw err;
+        tree->insert(item);
+        return *this;
+    }
+
     virtual bin_search_simple_set<T>& operator-=(const T item) {
         // replace this line:
         (void) item;  return *this;
     }
 
     virtual bool contains(const T& item) const {
-        // replace this line:
-        (void) item;  return false;
+        return tree->contains(item);
+//	  return false;
     }
 
 
@@ -408,6 +483,7 @@ public:
 //---------------------------------------------------------------
 
 // insert an appropriate carray_range_set declaration here
+<<<<<<< HEAD
 template<typename T, typename C = comp<T>, typename I = increment<T>>
 class carray_range_set : public virtual range_set<T, C>, public carray_simple_set<T>{
 
@@ -423,6 +499,44 @@ public:
 
 
 }
+=======
+/*
+template<typename T, typename C = comp<T>, typename I = increment<T>>
+class carray_range_set : public virtual range_set<T, C>, public carray_simple_set<T> {
+    // 'virtual' on range_set ensures single copy if multiply inherited
+    static_assert(std::is_integral<T>::value, "Integral type required.");
+    I inc;
+public:
+    // The first three methods below tell the compiler to use the
+    // versions of the simple_set methods already found in std_simple_set
+    // (given true multiple inheritance it can't be sure it should do that
+    // unless we tell it).
+    virtual carray_simple_set<T>& operator+=(const T item) {
+        return carray_simple_set<T>::operator+=(item);
+    }
+    virtual carray_simple_set<T>& operator-=(const T item) {
+        return carray_simple_set<T>::operator-=(item);
+    }
+    virtual bool contains(const T& item) const {
+        return carray_simple_set<T>::contains(item);
+    }
+    carray_range_set(const T l, const T h) {}
+    virtual range_set<T>& operator+=(const range<T, C> r) {
+        for (T i = (r.closed_low() ? r.low() : inc(r.low())); r.contains(i); i = inc(i)) {
+            *this += i;
+        }
+        return *this;
+    }
+    virtual range_set<T>& operator-=(const range<T, C> r) {
+        for (T i = (r.closed_low() ? r.low() : inc(r.low()));
+             r.contains(i); i = inc(i)) {
+            *this -= i;
+        }
+        return *this;
+    }
+};
+*/
+>>>>>>> 49a13fc490389e43d377a448de00b5986643a171
 //---------------------------------------------------------------
 
 // insert an appropriate hashed_range_set declaration here
@@ -481,6 +595,118 @@ int main() {
     //H -= 101;
     cout << "tue is " << (H.contains(tue)? "" : "not ") << "in H\n";
     cout << "mon is " << (H.contains(mon)? "" : "not ") << "in H\n";
+    cout << "202 is " << (H.contains(202)? "" : "not ") << "in H\n";
+    cout << "101 is " << (H.contains(101)? "" : "not ") << "in H\n";
+
+    cout << "\n";
+
+    bin_search_simple_set<int> B(10);
+    cout << "19 is " << (B.contains(19)? "" : "not ") << "in B\n";
+    B += 20;
+    cout << "20 is " << (B.contains(20)? "" : "not ") << "in B\n";
+    B += 11;
+    cout << "11 is " << (B.contains(11)? "" : "not ") << "in B\n";
+
+    cout << "\n";
+
+    bin_search_tree<int> n;
+
+/*
+ *       10
+ *         \
+ *         20  
+ *           \
+ *           30
+ *          /  \
+ *         25  40
+ *             / \
+ *            35 50 
+ *             \
+ *             37   
+ */
+
+/*
+  n.insert(10);
+  n.insert(20);
+  n.insert(30);
+  n.insert(40);
+  n.insert(25);
+  n.insert(35);
+  n.insert(37);
+  n.insert(50);
+
+  cout << "10 : " << n.contains(10) << std::endl;
+  cout << "20 : " << n.contains(20) << std::endl;
+  cout << "30 : " << n.contains(30) << std::endl;
+  cout << "40 : " << n.contains(40) << std::endl;
+  cout << "25 : " << n.contains(25) << std::endl;
+  cout << "35 : " << n.contains(35) << std::endl;
+  cout << "37 : " << n.contains(37) << std::endl;
+  cout << "50 : " << n.contains(50) << std::endl;
+  cout << "0 : " << n.contains(0) << std::endl;     // False
+  cout << "15 : " << n.contains(15) << std::endl;   // False
+  cout << "\n";
+
+/*
+ *         20  
+ *           \
+ *           35
+ *             \
+ *             40
+ *             / \
+ *            37 50 
+ *                
+ */
+
+/*
+  n.remove(35);
+  n.remove(10);
+  n.remove(25);
+
+  cout << "10 : " << n.contains(10) << std::endl;   // False
+  cout << "20 : " << n.contains(20) << std::endl;
+  cout << "30 : " << n.contains(30) << std::endl;
+  cout << "40 : " << n.contains(40) << std::endl;
+  cout << "25 : " << n.contains(25) << std::endl;   // False
+  cout << "35 : " << n.contains(35) << std::endl;   // False
+  cout << "37 : " << n.contains(37) << std::endl;
+  cout << "50 : " << n.contains(50) << std::endl;
+  cout << "0 : " << n.contains(0) << std::endl;     // False
+  cout << "15 : " << n.contains(15) << std::endl;   // False
+ 
+  cout << "\n";
+    */
+
+/*
+    range_set<weekday>* V_r = new carray_range_set<weekday>(mon, (weekday)5);
+    *V_r += range<weekday>(mon, true, wed, true);
+    cout << "mon is " << (V_r->contains(mon)? "" : "not ") << "in V_r\n";
+    cout << "tue is " << (V_r->contains(tue)? "" : "not ") << "in V_r\n";
+    cout << "wed is " << (V_r->contains(wed)? "" : "not ") << "in V_r\n";
+    cout << "thu is " << (V_r->contains(thu)? "" : "not ") << "in V_r\n";
+    cout << "fri is " << (V_r->contains(fri)? "" : "not ") << "in V_r\n";
+    cout << "\n";
+    *V_r += range<weekday>(tue, true, thu, false);
+    cout << "mon is " << (V_r->contains(mon)? "" : "not ") << "in V_r\n";
+    cout << "tue is " << (V_r->contains(tue)? "" : "not ") << "in V_r\n";
+    cout << "wed is " << (V_r->contains(wed)? "" : "not ") << "in V_r\n";
+    cout << "thu is " << (V_r->contains(thu)? "" : "not ") << "in V_r\n";
+    cout << "fri is " << (V_r->contains(fri)? "" : "not ") << "in V_r\n";
+    cout << "\n";
+    *V_r -= range<weekday>(wed, true, fri, false);
+    cout << "mon is " << (V_r->contains(mon)? "" : "not ") << "in V_r\n";
+    cout << "tue is " << (V_r->contains(tue)? "" : "not ") << "in V_r\n";
+    cout << "wed is " << (V_r->contains(wed)? "" : "not ") << "in V_r\n";
+    cout << "thu is " << (V_r->contains(thu)? "" : "not ") << "in V_r\n";
+    cout << "fri is " << (V_r->contains(fri)? "" : "not ") << "in V_r\n";
+    cout << "\n";
+*/
+/*
+    // B -= 500;
+    // cout << "500 is " << (H.contains(500)? "" : "not ") << "in H\n";
+    B += 5000;
+    cout << "5000 is " << (B.contains(5000)? "" : "not ") << "in B\n";
+    cout << "500 is " << (B.contains(500)? "" : "not ") << "in B\n";
 */
 /*
     range<string> r1("a", true, "f", true);
