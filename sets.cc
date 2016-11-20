@@ -161,14 +161,20 @@ public:
     virtual hashed_simple_set<T, F>& operator+=(const T item) {
         // replace this line:
         //(void) item; 
+        
         if((*(ptr+(F()(item) % H)) != item) && (*(ptr+(F()(item) % H)) != ((T) 0)))
         {
         	//collision
         	int k = 1;
-        	while(*(ptr+k*(F()(item) % H)) != item && *(ptr+k*(F()(item) % H)) != ((T) 0)){
+        	while(*(ptr+k*(F()(item) % H)) != item && *(ptr+k*(F()(item) % H)) != ((T) 0) && k<=H){
         		k++;
         	}
-        	*(ptr+k*(F()(item) % H)) = item;
+        	if(k == H){
+        		throw err;
+        	}
+        	else{
+        		*(ptr+k*(F()(item) % H)) = item;
+        	}
         }
         else{
         	*(ptr+(F()(item) % H)) = item; 
@@ -449,6 +455,9 @@ int main() {
     H += 500;
     cout << "500 is " << (H.contains(500)? "" : "not ") << "in H\n";
     H -= 500;
+    cout << "500 is " << (H.contains(500)? "" : "not ") << "in H\n";
+    H += 5000;
+    cout << "5000 is " << (H.contains(5000)? "" : "not ") << "in H\n";
     cout << "500 is " << (H.contains(500)? "" : "not ") << "in H\n";
 
 /*
