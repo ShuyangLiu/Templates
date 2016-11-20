@@ -483,23 +483,35 @@ public:
 //---------------------------------------------------------------
 
 // insert an appropriate carray_range_set declaration here
-<<<<<<< HEAD
+
 template<typename T, typename C = comp<T>, typename I = increment<T>>
-class carray_range_set : public virtual range_set<T, C>, public carray_simple_set<T>{
-
-
+class carray_range_set : public virtual range_set<T, C>, protected carray_simple_set<T>{
 public:
+    carray_range_set(const T l, const T h) : carray_simple_set(l, h) {
+       // constructor
+    }
 
+    virtual carray_simple_set<T>& operator+=(const T item){
+        return carray_simple_set<T>::operator+=(item);
+    }
 
+    virtual carray_simple_set<T>& operator-=(const T item){
+        return carray_simple_set<T>::operator-=(item);
+    }
 
+    virtual carray_range_set<T, C>& operator+=(const range<T, C> r){
+        return *this;
+    }
 
+    virtual carray_range_set<T, C>& operator-=(const range<T, C> r){
+        return *this;
+    };
 
+    virtual bool contains(const T& item) const {
+        return carray_simple_set<T>::contains(item);
+    }
 
-
-
-
-}
-=======
+};
 /*
 template<typename T, typename C = comp<T>, typename I = increment<T>>
 class carray_range_set : public virtual range_set<T, C>, public carray_simple_set<T> {
@@ -536,7 +548,6 @@ public:
     }
 };
 */
->>>>>>> 49a13fc490389e43d377a448de00b5986643a171
 //---------------------------------------------------------------
 
 // insert an appropriate hashed_range_set declaration here
