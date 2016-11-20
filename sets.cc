@@ -161,23 +161,28 @@ public:
     virtual hashed_simple_set<T, F>& operator+=(const T item) {
         // replace this line:
         //(void) item; 
-        
-        if((*(ptr+(F()(item) % H)) != item) && (*(ptr+(F()(item) % H)) != ((T) 0)))
+        int s;
+        if((F()(item) % H) == 0){
+        	s = 1;
+		} else {
+			s = F()(item) % H;
+        }
+        if((*(ptr+s) != item) && (*(ptr+s) != ((T) 0)))
         {
         	//collision
         	int k = 1;
-        	while(*(ptr+k*(F()(item) % H)) != item && *(ptr+k*(F()(item) % H)) != ((T) 0) && k<=H){
+        	while(*(ptr+k*s) != item && *(ptr+k*s) != ((T) 0) && k<=H){
         		k++;
         	}
         	if(k == H){
         		throw err;
         	}
         	else{
-        		*(ptr+k*(F()(item) % H)) = item;
+        		*(ptr+k*s) = item;
         	}
         }
         else{
-        	*(ptr+(F()(item) % H)) = item; 
+        	*(ptr+s) = item; 
         }
         return *this;
     }
@@ -198,9 +203,13 @@ public:
     virtual bool contains(const T& item) const {
         // replace this line:
         //(void) item;  
+        int s = (F()(item) % H);
+        if(s == 0) {
+        	s = 1;
+        }
         for (int k=1; k <= P; k++)
         {
-        	if((*(ptr+k*(F()(item) % H))) == item)
+        	if((*(ptr+k*s)) == item)
         	{
         		return true;
         	}
@@ -451,14 +460,13 @@ int main() {
     cout << "tue is " << (V->contains(tue)? "" : "not ") << "in V\n";
     cout << "wed is " << (V->contains(wed)? "" : "not ") << "in V\n";
     
-    hashed_simple_set<int, cast_to_int<int>> H(100);
-    H += 500;
-    cout << "500 is " << (H.contains(500)? "" : "not ") << "in H\n";
-    H -= 500;
-    cout << "500 is " << (H.contains(500)? "" : "not ") << "in H\n";
-    H += 5000;
-    cout << "5000 is " << (H.contains(5000)? "" : "not ") << "in H\n";
-    cout << "500 is " << (H.contains(500)? "" : "not ") << "in H\n";
+    hashed_simple_set<int, cast_to_int<int>> H(101);
+    H += 101;
+    cout << "101 is " << (H.contains(101)? "" : "not ") << "in H\n";
+    H += 202;
+    //H -= 101;
+    cout << "202 is " << (H.contains(202)? "" : "not ") << "in H\n";
+    cout << "101 is " << (H.contains(101)? "" : "not ") << "in H\n";
 
 /*
     range<string> r1("a", true, "f", true);
