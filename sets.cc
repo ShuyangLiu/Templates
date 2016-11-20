@@ -408,7 +408,21 @@ public:
 //---------------------------------------------------------------
 
 // insert an appropriate carray_range_set declaration here
+template<typename T, typename C = comp<T>, typename I = increment<T>>
+class carray_range_set : public virtual range_set<T, C>, public carray_simple_set<T>{
 
+
+public:
+
+
+
+
+
+
+
+
+
+}
 //---------------------------------------------------------------
 
 // insert an appropriate hashed_range_set declaration here
@@ -460,14 +474,14 @@ int main() {
     cout << "tue is " << (V->contains(tue)? "" : "not ") << "in V\n";
     cout << "wed is " << (V->contains(wed)? "" : "not ") << "in V\n";
     
-    hashed_simple_set<int, cast_to_int<int>> H(2);
-    H += 101;
-    cout << "101 is " << (H.contains(101)? "" : "not ") << "in H\n";
-    H += 202;
+    /*hashed_simple_set<weekday, cast_to_int<weekday>> H(5);
+    H += mon;
+    cout << "mon is " << (H.contains(mon)? "" : "not ") << "in H\n";
+    H += tue;
     //H -= 101;
-    cout << "202 is " << (H.contains(202)? "" : "not ") << "in H\n";
-    cout << "101 is " << (H.contains(101)? "" : "not ") << "in H\n";
-
+    cout << "tue is " << (H.contains(tue)? "" : "not ") << "in H\n";
+    cout << "mon is " << (H.contains(mon)? "" : "not ") << "in H\n";
+*/
 /*
     range<string> r1("a", true, "f", true);
     cout << "\"b\" is " << (r1.contains("b") ? "" : "not ") << "in r1\n";
