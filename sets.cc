@@ -565,9 +565,8 @@ public:
 template<typename T, typename F = cast_to_int<T>, typename C = comp<T>, typename I = increment<T>>
 class bin_search_range_set : public virtual range_set<T, C>, public bin_search_simple_set<T, F>{
 	I inc;
-        range_comp<T,C> range_cmp;
 public:
-	bin_search_range_set(const int num) : bin_search_simple_set<T, range_comp<T,C>>(num), inc(), range_cmp() {
+	bin_search_range_set(const int num) : bin_search_simple_set<T, range_comp<T,C>>(num), inc() {
 	}
 	virtual bin_search_simple_set<T>& operator+=(const T item){
 		return bin_search_simple_set<T, C>::operator+=(item);
@@ -579,6 +578,12 @@ public:
         return bin_search_simple_set<T>::contains(item);
     }
     virtual bin_search_range_set<T>& operator+=(const range<T, C> r) {
+ 	for(int i = 0; i < current_size; i++) {
+    	    if(overlap(a[i], r) {
+                break;
+            }
+        }        
+        *this += c_range;
         return *this;
     }
     virtual bin_search_range_set<T>& operator-=(const range<T, C> r) {
