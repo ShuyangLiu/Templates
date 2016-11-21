@@ -365,6 +365,8 @@ public:
 // own replacement if you want, e.g. for C strings.
 //
 class empty_range { };      // exception
+class merge_fail { };
+class split_fail { };
 template<typename T, typename C = comp<T>>
 class range {
     const T L;      // represents all elements from L
@@ -373,6 +375,8 @@ class range {
     const bool Hc;  // inclusive?
     const C cmp;    // can't be static; needs explicit instantiation
     static const empty_range err;
+    static const merge_fail merge_err;
+    static const split_fail split_err;
 public:
     range(const T l, const bool lc, const T h, const bool hc)
             : L(l), Lc(lc), H(h), Hc(hc), cmp() {
@@ -390,7 +394,85 @@ public:
     
     // You may also find it useful to define the following:
     // bool precedes(const range<T, C>& other) const { ...
-    // bool overlaps(const range<T, C>& other) const { ...
+    bool overlaps(const range<T, C>& other) const { 
+    	if((cmp.precedes(L, other.L) && cmp.precedes(other.L, H)) || 
+    		(cmp.precedes(L, other.H) && cmp.precedes(other.H, H))) {
+    		return true;
+    	} else {
+    		if (((cmp.equals(L, other.H)) && (Lc == true) && (other.Hc == true)) || 
+    			((cmp.equals(H, other.L)) && (Hc == true) && (other.Lc == true))) {
+    			return true;
+    		} else {
+    			return false;
+    		}
+    	}
+    }
+
+    range merge(const range<T, C>& other) const {
+    	if(!overlaps(other)){
+    		throw merge_err;
+    	} else {
+    		T l; T h; bool lc; bool hc; 
+    		if (cmp.precedes(L, other.L)){
+    			l = L;
+    			lc = Lc;
+    		} else {
+    			l = other.L;
+    			lc = other.Lc;
+    		}
+
+    		if (cmp.precedes(other.H, H)){
+    			h = H;
+    			hc = Hc;
+    		} else {
+    			h = other.H;
+    			hc = other.Hc;
+    		}
+    		return range<T>(l, lc, h, hc);
+    	}
+    }
+
+    range* split(const range<T, C>& other) const {
+    	//split the range into 2 by another range
+    	range ary [2]; 
+    	if (cmp.precedes(other.L, L) || cmp.precedes(H, other.H)){
+    		throw split_err;
+    	} else {
+    		T l1 = L;
+    		T h1 = other.L;
+    		bool lc1 = Lc;
+    		bool hc1 = other.Lc;
+    		ary[0] = range<T>(l1, lc1, h1, hc1);
+
+    		T l2 = other.H;
+    		T h2 = H;
+    		bool lc2 = other.Hc;
+    		bool hc2 = Hc;
+    		ary[1] = range<T>(l2, lc2, h2, hc2);
+    	}
+    	return ary;
+    }
+
+    range* split(const T item) const {
+    	range ary [2]; 
+    	if (cmp.precedes(item, L) || cmp.precedes(H, item)){
+    		throw split_err;
+    	} else {
+    		T l1 = L;
+    		T h1 = item;
+    		bool lc1 = Lc;
+    		bool hc1 = false;
+    		ary[0] = range<T>(l1, lc1, h1, hc1);
+
+    		T l2 = item;
+    		T h2 = H;
+    		bool lc2 = false;
+    		bool hc2 = Hc;
+    		ary[1] = range<T>(l2, lc2, h2, hc2);
+    	}
+
+    	return ary;
+    }
 };
 
 // Assuming (l,h) != [l+1, h-1]
