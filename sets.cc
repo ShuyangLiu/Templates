@@ -612,6 +612,22 @@ int main() {
     cout << "fri is " << (V_r.contains(fri)? "" : "not ") << "in V_r\n";
     cout << "\n";
 
+    range_set<int>* X = new carray_range_set<int>(0, 100);
+    *X += range<int>(5, true, 8, false);
+    if (X->contains(4)) cout << "4 is in X\n";
+    if (X->contains(5)) cout << "5 is in X\n";      // should print
+    if (X->contains(6)) cout << "6 is in X\n";      // should print
+    if (X->contains(7)) cout << "7 is in X\n";      // should print
+    if (X->contains(8)) cout << "8 is in X\n";
+    if (X->contains(9)) cout << "9 is in X\n";
+    *X -= range<int>(6, true, 10, false);
+    if (X->contains(4)) cout << "4 is now in X\n";
+    if (X->contains(5)) cout << "5 is now in X\n";      // should print
+    if (X->contains(6)) cout << "6 is now in X\n";
+    if (X->contains(7)) cout << "7 is now in X\n";
+    if (X->contains(8)) cout << "8 is now in X\n";
+    if (X->contains(9)) cout << "9 is now in X\n";
+
     // hashed_simple_set<weekday, cast_to_int<weekday>> H(5);
     // H += mon;
     // cout << "mon is " << (H.contains(mon)? "" : "not ") << "in H\n";
