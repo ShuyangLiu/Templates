@@ -249,75 +249,6 @@ private:
 
 //---------------------------------------------------------------
 
-template <typename T>
-class node{
-public:
-    const T& item;
-    node<T> *left, *right;
-    node(const T& i) : item(i), left(NULL), right(NULL) {}
-};
-
-template <typename T, typename C = comp<T>>
-class bin_search_tree{
-public:
-    int size;
-    node<T> *head;
-    bin_search_tree() : head(NULL), size(0) {}
-    bin_search_tree<T,C>& insert(const T& i) {
-        head=insert(i, head);
-        return *this;
-    }
-    bool contains(const T& i) const {
-        return contains(i, head);
-    }
-    bin_search_tree<T,C>& remove(const T& i) {
-        head = remove(i, head);
-        return *this;
-    }
-private:
-    node<T>* insert(const T& i, node<T>* current_node) {
-        if(current_node == NULL)  { size++; return new node<T>(i); }
-        if(current_node->item < i) current_node->right = insert(i, current_node->right);
-        if(i < current_node->item) current_node->left = insert(i, current_node->left);
-        return current_node;
-    }
-    bool contains(const T& i, node<T>* current_node) const {
-        if(current_node == NULL) return false;
-        else if (current_node->item == i) return true;
-        else if (current_node->item < i) return contains(i, current_node->right);
-        else if (i < current_node->item) return contains(i, current_node->left);
-    }
-    node<T>* remove(const T& i, node<T>* current_node) {
-        if(current_node == NULL) return current_node; // Error : element not in tree.
-        else if(current_node->item < i) current_node->right = remove(i, current_node->right);
-        else if(i < current_node->item) current_node->left = remove(i, current_node->left);
-        else {
-            if(current_node->left == NULL && current_node->right == NULL) { free(current_node); return NULL; }
-            else if(current_node->left == NULL) {
-                node<T>* replacement_node = current_node->right;
-                free(current_node);
-                return replacement_node;
-            }
-            else if(current_node->right == NULL) {
-                node<T>* replacement_node = current_node->left;
-                free(current_node);
-                return replacement_node;
-            } else {
-                node<T>* replacement_node = current_node->right;
-                while(replacement_node->left != NULL) {
-                    replacement_node = replacement_node->left;
-                }
-                node<T>* temp_node = new node<T>(replacement_node->item);
-                temp_node->left = current_node->left;
-                temp_node->right = current_node->right;
-                current_node = temp_node;
-                current_node->right = remove(replacement_node->item, replacement_node);
-            }
-        }
-        return current_node;
-    }
-};
-
 
 // Sorted array implementation of set; supports binary search.
 // Requires instantiation with guaranteed upper bound on number of
@@ -330,11 +261,34 @@ class bin_search_simple_set : public virtual simple_set<T> {
     // You'll need some data members here.
 private:
     const T max;
-    bin_search_tree<T, C> *tree;
+    int current_size;
+    C comparitor;
+    int *a;
     static const overflow err;
+    
+    int find_mid_index(int upper_bound, int lower_bound) const {
+        return ((upper_bound - lower_bound)/2 + lower_bound);
+    }
+    
+    bool has_value(int upper, int lower, const T& item) const {
+        if(upper <= lower) return false;
+        else {
+            int mid = find_mid_index(upper, lower);
+            if(comparitor.equals(a[mid], item)) return true;
+            else if(comparitor.precedes(a[mid], item)) { 
+		if (mid==lower) return false;
+		else { return has_value(upper, mid, item); }
+            }
+            else if(comparitor.precedes(item, a[mid])) {
+           	if (mid == upper) return false;
+                else { return has_value(mid, lower, item); }
+ 	    }
+            return false;
+        }
+    }
 public:
     // and some methods
-    bin_search_simple_set(const T n): max(n), tree(new bin_search_tree<T,C>) {
+    bin_search_simple_set(const T n): max(n), current_size(0), a(new T[max]), comparitor() {
         //constructor
     }
 
@@ -342,19 +296,51 @@ public:
     }
 
     virtual bin_search_simple_set<T, C>& operator+=(const T item) {
-        if(tree->size == max) throw err;
-        tree->insert(item);
+	if(current_size >= max) throw err;
+        if(comparitor.precedes(a[current_size - 1], item)) { a[current_size] = item; current_size++; }
+        else {
+            bool shift_array = false;
+            int insert_index = 0;
+            for(int i = 0; i < current_size; i++) {
+                if(comparitor.equals(a[i], item)) break; // Does not accept equal values.
+                else if(comparitor.precedes(item, a[i])) { shift_array = true; insert_index = i; break; }
+            }
+            if (shift_array) {
+		    T val_to_enter = item;
+		    for(int i = insert_index; i <= current_size; i++) {
+			T current_a_i = a[i];
+			a[i] = val_to_enter;
+			val_to_enter = current_a_i;
+		    }
+                    current_size++;
+            }
+        }
         return *this;
     }
 
     virtual bin_search_simple_set<T>& operator-=(const T item) {
-        // replace this line:
-        (void) item;  return *this;
+        if (current_size == 0) return *this;
+        bool shift_array = false;
+        int delete_index = 0;
+        for(int i = 0; i < current_size; i++) {
+            if(comparitor.equals(a[i], item)) { 
+                shift_array = true; 
+                delete_index = i; 
+                break; 
+            }
+        }
+        if (shift_array) {
+	    for(int i = delete_index; i < current_size ; i++) {
+         	a[i] = a[i + 1];
+	    }
+	    current_size--;
+        }
+	    
+        return *this;
     }
 
     virtual bool contains(const T& item) const {
-        return tree->contains(item);
-//	  return false;
+        return has_value(current_size, 0, item);
     }
 
 
@@ -639,8 +625,8 @@ int main() {
 
 
     //cout << std::is_integral<weekday>::value << std::endl;
-
-    /*hashed_simple_set<weekday, cast_to_int<weekday>> H(5);
+/*
+    hashed_simple_set<weekday, cast_to_int<weekday>> H(5);
     H += mon;
     cout << "mon is " << (H.contains(mon)? "" : "not ") << "in H\n";
     H += tue;
@@ -649,85 +635,33 @@ int main() {
     cout << "mon is " << (H.contains(mon)? "" : "not ") << "in H\n";
     cout << "202 is " << (H.contains(202)? "" : "not ") << "in H\n";
     cout << "101 is " << (H.contains(101)? "" : "not ") << "in H\n";
-
+*/
     cout << "\n";
 
     bin_search_simple_set<int> B(10);
     cout << "19 is " << (B.contains(19)? "" : "not ") << "in B\n";
     B += 20;
-    cout << "20 is " << (B.contains(20)? "" : "not ") << "in B\n";
     B += 11;
+    B += 10;
+    B += 15;
+    cout << "20 is " << (B.contains(20)? "" : "not ") << "in B\n";
     cout << "11 is " << (B.contains(11)? "" : "not ") << "in B\n";
+    cout << "10 is " << (B.contains(10)? "" : "not ") << "in B\n";
+    cout << "15 is " << (B.contains(15)? "" : "not ") << "in B\n";
+    cout << "16 is " << (B.contains(16)? "" : "not ") << "in B\n";
 
     cout << "\n";
 
-    bin_search_tree<int> n;
+    B -= 11;
+    B -= 15;
 
-/*
- *       10
- *         \
- *         20  
- *           \
- *           30
- *          /  \
- *         25  40
- *             / \
- *            35 50 
- *             \
- *             37   
- */
+    cout << "20 is " << (B.contains(20)? "" : "not ") << "in B\n";
+    cout << "11 is " << (B.contains(11)? "" : "not ") << "in B\n"; 
+    cout << "10 is " << (B.contains(10)? "" : "not ") << "in B\n";
+    cout << "15 is " << (B.contains(15)? "" : "not ") << "in B\n";
 
-/*
-  n.insert(10);
-  n.insert(20);
-  n.insert(30);
-  n.insert(40);
-  n.insert(25);
-  n.insert(35);
-  n.insert(37);
-  n.insert(50);
+    cout << "\n"; 
 
-  cout << "10 : " << n.contains(10) << std::endl;
-  cout << "20 : " << n.contains(20) << std::endl;
-  cout << "30 : " << n.contains(30) << std::endl;
-  cout << "40 : " << n.contains(40) << std::endl;
-  cout << "25 : " << n.contains(25) << std::endl;
-  cout << "35 : " << n.contains(35) << std::endl;
-  cout << "37 : " << n.contains(37) << std::endl;
-  cout << "50 : " << n.contains(50) << std::endl;
-  cout << "0 : " << n.contains(0) << std::endl;     // False
-  cout << "15 : " << n.contains(15) << std::endl;   // False
-  cout << "\n";
-
-/*
- *         20  
- *           \
- *           35
- *             \
- *             40
- *             / \
- *            37 50 
- *                
- */
-
-/*
-  n.remove(35);
-  n.remove(10);
-  n.remove(25);
-
-  cout << "10 : " << n.contains(10) << std::endl;   // False
-  cout << "20 : " << n.contains(20) << std::endl;
-  cout << "30 : " << n.contains(30) << std::endl;
-  cout << "40 : " << n.contains(40) << std::endl;
-  cout << "25 : " << n.contains(25) << std::endl;   // False
-  cout << "35 : " << n.contains(35) << std::endl;   // False
-  cout << "37 : " << n.contains(37) << std::endl;
-  cout << "50 : " << n.contains(50) << std::endl;
-  cout << "0 : " << n.contains(0) << std::endl;     // False
-  cout << "15 : " << n.contains(15) << std::endl;   // False
- 
-  cout << "\n";
-    */
 
 /*
     range_set<weekday>* V_r = new carray_range_set<weekday>(mon, (weekday)5);
