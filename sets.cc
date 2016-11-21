@@ -387,9 +387,27 @@ public:
         return ((cmp.precedes(L, item) || (Lc && cmp.equals(L, item)))
                 && (cmp.precedes(item, H) || (Hc && cmp.equals(item, H))));
     }
+    
     // You may also find it useful to define the following:
     // bool precedes(const range<T, C>& other) const { ...
     // bool overlaps(const range<T, C>& other) const { ...
+};
+
+// Assuming (l,h) != [l+1, h-1]
+template<typename T, typename C=comp<T>>
+class range_comp {
+    static const C cmp = new comp<T>;
+    // Assuming precedes means strictly precedes: ranges contain no common element.
+    bool precedes(const range<T, C> r1, const range<T, C> r2) {
+        if(cmp.precedes(r1.H, r2.L)) return true; 
+        else if(cmp.equals(r1.H, r2.L) && (!r1.Hc || !r2.Lc)) return true;
+	return false;
+    }
+    bool equals(const range<T, C> r1, const range<T, C> r2) {
+	return (cmp.equals(r1.L, r2.L) && cmp.equals(r1.H, r2.H) && (r1.Lc == r2.Lc) && (r1.Hc == r2.Hc));
+    }
+
+
 };
 
 // You may find it useful to define derived types with two-argument
@@ -544,6 +562,36 @@ public:
 //---------------------------------------------------------------
 
 // insert an appropriate bin_search_range_set declaration here
+template<typename T, typename F = cast_to_int<T>, typename C = comp<T>, typename I = increment<T>>
+class bin_search_range_set : public virtual range_set<T, C>, public bin_search_simple_set<T, F>{
+	I inc;
+public:
+	bin_search_range_set(const int num) : bin_search_simple_set<T, C>(num), inc() {
+	}
+	virtual bin_search_simple_set<T>& operator+=(const T item){
+		return bin_search_simple_set<T, C>::operator+=(item);
+	}
+	virtual bin_search_simple_set<T>& operator-=(const T item){
+		return bin_search_simple_set<T, C>::operator-=(item);
+	}
+	virtual bool contains(const T& item) const {
+        return bin_search_simple_set<T>::contains(item);
+    }
+    virtual bin_search_range_set<T>& operator+=(const range<T, C> r) {
+        /*for () {
+            *this += i;
+        }*/
+        return *this;
+    }
+    virtual bin_search_range_set<T>& operator-=(const range<T, C> r) {
+        for (T i = (r.closed_low() ? r.low() : inc(r.low()));
+             r.contains(i); i = inc(i)) {
+            *this -= i;
+        }
+        return *this;
+    }
+
+};
 
 //===============================================================
 
