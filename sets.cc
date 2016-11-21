@@ -110,7 +110,7 @@ public:
         return *this;
     }
     virtual carray_simple_set<T>& operator-=(const T item) {
-    	if( (item >= H) || (item < L)) throw err;
+        if( (item >= H) || (item < L)) throw err;
         *(ptr+((int)item-(int)L)) = false;
         return *this;
     }
@@ -163,91 +163,92 @@ public:
         //(void) item; 
         int s;
         if((F()(item) % H) == 0){
-        	s = 1;
-		} else {
-			s = F()(item) % H;
+            s = 1;
+        } else {
+            s = F()(item) % H;
         }
         if((*(ptr+s) != item) && (*(ptr+s) != ((T) 0)))
         {
-        	//collision
-        	int k = 1;
-        	while(*(ptr+k*s) != item && *(ptr+k*s) != ((T) 0) && k<=H){
-        		k++;
-        	}
-        	if(k > H){
-        		throw err;
-        	}
-        	else{
-        		*(ptr+k*s) = item;
-        	}
+            //collision
+            int k = 1;
+            while(*(ptr+k*s) != item && *(ptr+k*s) != ((T) 0) && k<=H){
+                k++;
+            }
+            if(k > H){
+                throw err;
+            }
+            else{
+                *(ptr+k*s) = item;
+            }
         }
         else{
-        	*(ptr+s) = item; 
+            *(ptr+s) = item;
         }
         return *this;
     }
     virtual hashed_simple_set<T, F>& operator-=(const T item) {
         // replace this line:
         //(void) item; 
-         
+
         for (int k=1; k <= P; k++)
         {
-        	if((*(ptr+k*(F()(item) % H))) == item)
-        	{
-        		(*(ptr+k*(F()(item) % H))) = (T) 0;
-        		return *this;
-        	}
-		}
-		return *this;
+            if((*(ptr+k*(F()(item) % H))) == item)
+            {
+                (*(ptr+k*(F()(item) % H))) = (T) 0;
+                return *this;
+            }
+        }
+        return *this;
     }
     virtual bool contains(const T& item) const {
         // replace this line:
         //(void) item;  
         int s = (F()(item) % H);
         if(s == 0) {
-        	s = 1;
+            s = 1;
         }
         for (int k=1; k <= P; k++)
         {
-        	if((*(ptr+k*s)) == item)
-        	{
-        		return true;
-        	}
-		}
+            if((*(ptr+k*s)) == item)
+            {
+                return true;
+            }
+        }
         return false;
     }
 private:
-	int isPrime(int num) {
-		if (num == 1){
-			return false;
-		}
-		if (num == 2){
-			return true;
-		}
-		int bound = (int) floor(sqrt (num));
-		for (int i=2; i<=bound; i++){
-			//return false if num % n == 0
-			if(num % i == 0){
-				return false;
-			}
-		}
-		return true;
-	}
-	
-	int prime_greater_than(int n)
-	{
-		for(int i=n; i<n*n; i++)
-		{
-			if(isPrime(i))
-			{
-				return i;
-			}
-		}
-		return 0;
-	}
+    int isPrime(int num) {
+        if (num == 1){
+            return false;
+        }
+        if (num == 2){
+            return true;
+        }
+        int bound = (int) floor(sqrt (num));
+        for (int i=2; i<=bound; i++){
+            //return false if num % n == 0
+            if(num % i == 0){
+                return false;
+            }
+        }
+        return true;
+    }
+
+    int prime_greater_than(int n)
+    {
+        for(int i=n; i<n*n; i++)
+        {
+            if(isPrime(i))
+            {
+                return i;
+            }
+        }
+        return 0;
+    }
 };
 
 //---------------------------------------------------------------
+
 
 // Sorted array implementation of set; supports binary search.
 // Requires instantiation with guaranteed upper bound on number of
@@ -353,10 +354,10 @@ public:
 //
 template<typename T>
 class increment {
-    static_assert(std::is_integral<T>::value, "Integral type required.");
+    //static_assert(std::is_integral<T>::value, "Integral type required.");
 public:
-    T operator()(T a) const {
-        return ++a;
+    T operator()(const T a)  {
+        return (T)(((int)a)+1);
     }
 };
 
@@ -375,7 +376,7 @@ class range {
 public:
     range(const T l, const bool lc, const T h, const bool hc)
             : L(l), Lc(lc), H(h), Hc(hc), cmp() {
-	if (cmp.precedes(h, l) || (cmp.equals(l, h) && (!Lc || !Hc))) throw err;
+        if (cmp.precedes(h, l) || (cmp.equals(l, h) && (!Lc || !Hc))) throw err;
     }
     // no destructor needed
     T low() const { return L; }
@@ -468,33 +469,31 @@ public:
 //---------------------------------------------------------------
 
 // insert an appropriate carray_range_set declaration here
-/*
+
 template<typename T, typename C = comp<T>, typename I = increment<T>>
-class carray_range_set : public virtual range_set<T, C>, public carray_simple_set<T> {
+class carray_range_set : public virtual range_set<T, C>, protected carray_simple_set<T>{
     // 'virtual' on range_set ensures single copy if multiply inherited
-    static_assert(std::is_integral<T>::value, "Integral type required.");
+    //static_assert(std::is_integral<T>::value, "Integral type required.");
     I inc;
+    C cmp;
 public:
-    // The first three methods below tell the compiler to use the
-    // versions of the simple_set methods already found in std_simple_set
-    // (given true multiple inheritance it can't be sure it should do that
-    // unless we tell it).
-    virtual carray_simple_set<T>& operator+=(const T item) {
+    carray_range_set(const T l, const T h) : carray_simple_set<T>(l, h), cmp(), inc() {}
+
+    virtual carray_simple_set<T>& operator+=(const T item){
         return carray_simple_set<T>::operator+=(item);
     }
-    virtual carray_simple_set<T>& operator-=(const T item) {
+
+    virtual carray_simple_set<T>& operator-=(const T item){
         return carray_simple_set<T>::operator-=(item);
     }
-    virtual bool contains(const T& item) const {
-        return carray_simple_set<T>::contains(item);
-    }
-    carray_range_set(const T l, const T h) {}
+
     virtual range_set<T>& operator+=(const range<T, C> r) {
         for (T i = (r.closed_low() ? r.low() : inc(r.low())); r.contains(i); i = inc(i)) {
             *this += i;
         }
         return *this;
     }
+
     virtual range_set<T>& operator-=(const range<T, C> r) {
         for (T i = (r.closed_low() ? r.low() : inc(r.low()));
              r.contains(i); i = inc(i)) {
@@ -502,12 +501,46 @@ public:
         }
         return *this;
     }
+
+    virtual bool contains(const T& item) const {
+        return carray_simple_set<T>::contains(item);
+    }
 };
-*/
+
 //---------------------------------------------------------------
 
 // insert an appropriate hashed_range_set declaration here
+template<typename T, typename F = cast_to_int<T>, typename C = comp<T>, typename I = increment<T>>
+class hashed_range_set : public virtual range_set<T, C>, public hashed_simple_set<T, F>{
+	I inc;
+    C cmp;
+public:
+	hashed_range_set(const int num) : hashed_simple_set<T, F>(num), cmp(), inc() {
+	}
+	virtual hashed_simple_set<T>& operator+=(const T item){
+		return hashed_simple_set<T>::operator+=(item);
+	}
+	virtual hashed_simple_set<T>& operator-=(const T item){
+		return hashed_simple_set<T>::operator-=(item);
+	}
+	virtual bool contains(const T& item) const {
+        return hashed_simple_set<T>::contains(item);
+    }
+    virtual hashed_range_set<T>& operator+=(const range<T, C> r) {
+        for (T i = (r.closed_low() ? r.low() : inc(r.low())); r.contains(i); i = inc(i)) {
+            *this += i;
+        }
+        return *this;
+    }
+    virtual hashed_range_set<T>& operator-=(const range<T, C> r) {
+        for (T i = (r.closed_low() ? r.low() : inc(r.low()));
+             r.contains(i); i = inc(i)) {
+            *this -= i;
+        }
+        return *this;
+    }
 
+};
 //---------------------------------------------------------------
 
 // insert an appropriate bin_search_range_set declaration here
@@ -548,21 +581,45 @@ int main() {
     cout << "\"hello\" is " << (U.contains("hello") ? "" : "not ") << "in U\n";
     cout << "\"foo\" is " << (U.contains("foo") ? "" : "not ") << "in U\n";
 
-    simple_set<weekday>* V = new carray_simple_set<weekday>(mon, (weekday)5);
-    *V += tue;
-    *V += wed;
-    *V -= wed;
-    cout << "tue is " << (V->contains(tue)? "" : "not ") << "in V\n";
-    cout << "wed is " << (V->contains(wed)? "" : "not ") << "in V\n";
-    
-    hashed_simple_set<int, cast_to_int<int>> H(2);
-    H += 101;
-    cout << "101 is " << (H.contains(101)? "" : "not ") << "in H\n";
-    H += 202;
+    // simple_set<weekday>* V = new carray_simple_set<weekday>(mon, (weekday)5);
+    // *V += tue;
+    // *V += wed;
+    // *V -= wed;
+    // cout << "tue is " << (V->contains(tue)? "" : "not ") << "in V\n";
+    // cout << "wed is " << (V->contains(wed)? "" : "not ") << "in V\n";
+
+    //range_set<weekday>* V_r = new hashed_range_set<weekday>(6);
+    hashed_range_set<weekday, cast_to_int<weekday>> V_r(6);
+    V_r += range<weekday>(mon, true, wed, true);
+    cout << "mon is " << (V_r.contains(mon)? "" : "not ") << "in V_r\n";
+    cout << "tue is " << (V_r.contains(tue)? "" : "not ") << "in V_r\n";
+    cout << "wed is " << (V_r.contains(wed)? "" : "not ") << "in V_r\n";
+    cout << "thu is " << (V_r.contains(thu)? "" : "not ") << "in V_r\n";
+    cout << "fri is " << (V_r.contains(fri)? "" : "not ") << "in V_r\n";
+    cout << "\n";
+
+    // hashed_simple_set<weekday, cast_to_int<weekday>> H(5);
+    // H += mon;
+    // cout << "mon is " << (H.contains(mon)? "" : "not ") << "in H\n";
+    // H += tue;
+    // cout << "tue is " << (H.contains(tue)? "" : "not ") << "in H\n";
+    // cout << "mon is " << (H.contains(mon)? "" : "not ") << "in H\n";
+    // cout << "\n";
+
+
+
+    //cout << std::is_integral<weekday>::value << std::endl;
+/*
+    hashed_simple_set<weekday, cast_to_int<weekday>> H(5);
+    H += mon;
+    cout << "mon is " << (H.contains(mon)? "" : "not ") << "in H\n";
+    H += tue;
     //H -= 101;
+    cout << "tue is " << (H.contains(tue)? "" : "not ") << "in H\n";
+    cout << "mon is " << (H.contains(mon)? "" : "not ") << "in H\n";
     cout << "202 is " << (H.contains(202)? "" : "not ") << "in H\n";
     cout << "101 is " << (H.contains(101)? "" : "not ") << "in H\n";
-
+*/
     cout << "\n";
 
     bin_search_simple_set<int> B(10);
