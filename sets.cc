@@ -259,13 +259,14 @@ template<typename T, typename C = comp<T>>
 class bin_search_simple_set : public virtual simple_set<T> {
     // 'virtual' on simple_set ensures single copy if multiply inherited
     // You'll need some data members here.
-private:
-    const T max;
+protected:
+    const int max;
     int current_size;
     C comparitor;
-    int *a;
+    T *a;
     static const overflow err;
     
+private:
     int find_mid_index(int upper_bound, int lower_bound) const {
         return ((upper_bound - lower_bound)/2 + lower_bound);
     }
@@ -288,7 +289,7 @@ private:
     }
 public:
     // and some methods
-    bin_search_simple_set(const T n): max(n), current_size(0), a(new T[max]), comparitor() {
+    bin_search_simple_set(const int n): max(n), current_size(0), a(new T[max]), comparitor() {
         //constructor
     }
 
@@ -478,7 +479,7 @@ public:
 // Assuming (l,h) != [l+1, h-1]
 template<typename T, typename C=comp<T>>
 class range_comp {
-    static const C cmp = new comp<T>;
+    const C cmp = new comp<T>;
     // Assuming precedes means strictly precedes: ranges contain no common element.
     bool precedes(const range<T, C> r1, const range<T, C> r2) {
         if(cmp.precedes(r1.H, r2.L)) return true; 
@@ -644,38 +645,59 @@ public:
 //---------------------------------------------------------------
 
 // insert an appropriate bin_search_range_set declaration here
-template<typename T, typename F = cast_to_int<T>, typename C = comp<T>, typename I = increment<T>>
-class bin_search_range_set : public virtual range_set<T, C>, public bin_search_simple_set<T, F>{
-	I inc;
+template<typename T, typename C = comp<T>, typename R = range<T, C>, typename RC = range_comp<T,C>>
+class bin_search_range_set : public virtual range_set<T, C>, public bin_search_simple_set<R, RC>{
+    range_comp<T, C> range_cmp;
 public:
-	bin_search_range_set(const int num) : bin_search_simple_set<T, range_comp<T,C>>(num), inc() {
+	bin_search_range_set(const int num) : bin_search_simple_set<R, RC>(num), range_cmp() {
 	}
-	virtual bin_search_simple_set<T>& operator+=(const T item){
-		return bin_search_simple_set<T, C>::operator+=(item);
+	virtual bin_search_simple_set<R>& operator+=(const R item){
+		return bin_search_simple_set<R>::operator+=(item);
 	}
-	virtual bin_search_simple_set<T>& operator-=(const T item){
-		return bin_search_simple_set<T, C>::operator-=(item);
+	virtual bin_search_simple_set<R>& operator-=(const R item){
+		return bin_search_simple_set<R>::operator-=(item);
 	}
-	virtual bool contains(const T& item) const {
-        return bin_search_simple_set<T>::contains(item);
-    }
-    virtual bin_search_range_set<T>& operator+=(const range<T, C> r) {
- 	for(int i = 0; i < current_size; i++) {
-    	    if(overlap(a[i], r) {
-                break;
-            }
-        }        
-        *this += c_range;
-        return *this;
-    }
-    virtual bin_search_range_set<T>& operator-=(const range<T, C> r) {
-        for (T i = (r.closed_low() ? r.low() : inc(r.low()));
-             r.contains(i); i = inc(i)) {
-            *this -= i;
+	virtual bool contains(const R& item) const {
+            	 return bin_search_simple_set<R>::contains(item);
         }
-        return *this;
-    }
-
+        virtual bin_search_range_set<T>& operator+=(const range<T, C> r) {
+	    if(bin_search_simple_set<R, RC>::current_size >= bin_search_simple_set<R, RC>::max) throw bin_search_simple_set<R, RC>::err;
+            if(range_cmp.precedes(bin_search_simple_set<R, RC>::a[bin_search_simple_set<R, RC>::current_size - 1], r)) { 
+		bin_search_simple_set<R, RC>::a[bin_search_simple_set<R, RC>::current_size] = r; 
+		bin_search_simple_set<R, RC>::current_size++; 
+		return *this;
+	    }
+ 	    range<T, C> c_range = r;
+	    for(int i = 0; i < bin_search_simple_set<R, RC>::current_size; i++) {
+	        if(c_range.overlaps(bin_search_simple_set<R, RC>::a[i])) {
+                    c_range = r.merge(bin_search_simple_set<R, RC>::a[i]);
+            	    *this += c_range;
+		    break;
+                }
+            }        
+            return *this;
+        }
+        virtual bin_search_range_set<T>& operator-=(const range<T, C> r) {
+	    if(bin_search_simple_set<R, RC>::current_size == 0) return *this;
+	    range<T,C>* c_ranges;
+	    for(int i = 0; i < bin_search_simple_set<R, RC>::current_size; i++) {
+	        if(range_cmp.equals(r, bin_search_simple_set<R, RC>::a[i])) { 
+			*this -= bin_search_simple_set<R, RC>::a[i]; 
+			return *this; 
+		}
+                if(r.overlaps(bin_search_simple_set<R, RC>::a[i])) {
+	            c_ranges = r.split(bin_search_simple_set<R, RC>::a[i]);
+		    *this -= bin_search_simple_set<R, RC>::a[i];
+	            *this += c_ranges[0];
+		    *this += c_ranges[1];
+		}
+  	    }   
+            return *this;
+	}
+ 
+        bool contains(const range<T, C>& r) {
+		return bin_search_simple_set<R, RC>::contains(r);
+        }
 };
 
 //===============================================================
@@ -771,31 +793,39 @@ int main() {
 */
     cout << "\n";
 
-    bin_search_simple_set<int> B(10);
-    cout << "19 is " << (B.contains(19)? "" : "not ") << "in B\n";
-    B += 20;
-    B += 11;
-    B += 10;
-    B += 15;
-    cout << "20 is " << (B.contains(20)? "" : "not ") << "in B\n";
-    cout << "11 is " << (B.contains(11)? "" : "not ") << "in B\n";
-    cout << "10 is " << (B.contains(10)? "" : "not ") << "in B\n";
-    cout << "15 is " << (B.contains(15)? "" : "not ") << "in B\n";
-    cout << "16 is " << (B.contains(16)? "" : "not ") << "in B\n";
+    bin_search_simple_set<string> B(10);
+    cout << "apple is " << (B.contains("apple")? "" : "not ") << "in B\n";
+    B += "orange";
+    B += "banana";
+    B += "grape";
+    B += "grass";
+    cout << "orange is " << (B.contains("orange")? "" : "not ") << "in B\n";
+    cout << "banana is " << (B.contains("banana")? "" : "not ") << "in B\n";
+    cout << "grape is " << (B.contains("grape")? "" : "not ") << "in B\n";
+    cout << "grass is " << (B.contains("grass")? "" : "not ") << "in B\n";
+    cout << "hello is " << (B.contains("hello")? "" : "not ") << "in B\n";
 
     cout << "\n";
 
-    B -= 11;
-    B -= 15;
+    B -= "banana";
+    B -= "grape";
 
-    cout << "20 is " << (B.contains(20)? "" : "not ") << "in B\n";
-    cout << "11 is " << (B.contains(11)? "" : "not ") << "in B\n"; 
-    cout << "10 is " << (B.contains(10)? "" : "not ") << "in B\n";
-    cout << "15 is " << (B.contains(15)? "" : "not ") << "in B\n";
+    cout << "orange is " << (B.contains("orange")? "" : "not ") << "in B\n";
+    cout << "banana is " << (B.contains("banana")? "" : "not ") << "in B\n";
+    cout << "grape is " << (B.contains("grape")? "" : "not ") << "in B\n";
+    cout << "grass is " << (B.contains("grass")? "" : "not ") << "in B\n";
+    cout << "hello is " << (B.contains("hello")? "" : "not ") << "in B\n";
 
     cout << "\n"; 
 
 
+    range_set<double>* V_b = new bin_search_range_set<double>(10);
+/*    range<double> r1 = range<double>(128.0, true, 152.4, true);
+    *V_b += r1;
+    *V_b += range<double>(130.0, false, 150.2, false );
+    cout << "r1 is " << (V_b->contains(r1)? "" : "not ") << "in V_b\n";
+    cout << "\n";
+*/
 /*
     range_set<weekday>* V_r = new carray_range_set<weekday>(mon, (weekday)5);
     *V_r += range<weekday>(mon, true, wed, true);
