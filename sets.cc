@@ -370,10 +370,6 @@ class merge_fail { };
 class split_fail { };
 template<typename T, typename C = comp<T>>
 class range {
-    const T L;      // represents all elements from L
-    const bool Lc;  // inclusive?
-    const T H;      // through H
-    const bool Hc;  // inclusive?
     const C cmp;    // can't be static; needs explicit instantiation
     static const empty_range err;
     static const merge_fail merge_err;
@@ -403,7 +399,9 @@ public:
     		if (((cmp.equals(L, other.H)) && (Lc == true) && (other.Hc == true)) || 
     			((cmp.equals(H, other.L)) && (Hc == true) && (other.Lc == true))) {
     			return true;
-    		} else {
+    		} else if (cmp.equals(L, other.L) || cmp.equals(H, other.H)) {
+		        return true;
+ 		} else  {
     			return false;
     		}
     	}
@@ -417,18 +415,24 @@ public:
     		if (cmp.precedes(L, other.L)){
     			l = L;
     			lc = Lc;
-    		} else {
+    		} else if (cmp.precedes(other.L, L)) {
     			l = other.L;
     			lc = other.Lc;
-    		}
+    		} else { // They are equal.
+			l = L;
+			lc = Lc || other.Lc;
+                }
 
     		if (cmp.precedes(other.H, H)){
     			h = H;
     			hc = Hc;
-    		} else {
+    		} else if (cmp.precedes(H, other.H)) {
     			h = other.H;
     			hc = other.Hc;
-    		}
+    		} else { // They are equal.
+			h = H;
+			hc = Hc || other.Hc;
+                }
     		return range<T>(l, lc, h, hc);
     	}
     }
@@ -474,6 +478,10 @@ public:
 
     	return ary;
     }
+    const T L;      // represents all elements from L
+    const bool Lc;  // inclusive?
+    const T H;      // through H
+    const bool Hc;  // inclusive?
 };
 
 // Assuming (l,h) != [l+1, h-1]
@@ -819,8 +827,15 @@ int main() {
     cout << "\n"; 
 
 
-    range_set<double>* V_b = new bin_search_range_set<double>(10);
-/*    range<double> r1 = range<double>(128.0, true, 152.4, true);
+    range<double> r1 = range<double>(128.0, true, 152.4, true);
+    range<double> r2 = range<double>(128.0, false, 152.4, false);
+
+    range<double> results = r1.merge(r2);
+
+    cout << results.L << ", " << results.Lc << ", " << results.H << ", " << results.Hc << "\n";
+
+/*    range_set<double>* V_b = new bin_search_range_set<double>(10);
+    range<double> r1 = range<double>(128.0, true, 152.4, true);
     *V_b += r1;
     *V_b += range<double>(130.0, false, 150.2, false );
     cout << "r1 is " << (V_b->contains(r1)? "" : "not ") << "in V_b\n";
