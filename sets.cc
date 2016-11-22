@@ -443,23 +443,25 @@ public:
 
     range* lower_split(const range<T, C>& other) const {
     	//split the range into 2 by another range
-    	range ary[2];
-	if (cmp.precedes(other.L, L) || cmp.precedes(H, other.H)){
-    		throw split_err;
-	}
-	T l1 = L;
-	T h1 = other.L;
-	bool lc1 = Lc;
-	bool hc1 = other.Lc;
-	return range<T>(l1, lc1, h1, hc1);
+    
+    	range ary [2]; 
+       	if (cmp.precedes(other.L, L) || cmp.precedes(H, other.H)){
+       		throw split_err;
+    	} else {
+		T l1 = L;
+		T h1 = other.L;
+		bool lc1 = Lc;
+		bool hc1 = other.Lc;
+		ary[0] = range<T>(l1, lc1, h1, hc1);
 
-	T l2 = other.H;
-	T h2 = H;
-	bool lc2 = other.Hc;
-	bool hc2 = Hc;
-	range<T> r2  = range<T>(l2, lc2, h2, hc2);
-    	return ary;
-    }
+		T l2 = other.H;
+		T h2 = H;
+		bool lc2 = other.Hc;
+		bool hc2 = Hc;
+		ary[1] = range<T>(l2, lc2, h2, hc2);
+    	}
+   	return ary;
+   }
 
     range* split(const T item) const {
     	range ary[2];
