@@ -262,7 +262,7 @@ class bin_search_simple_set : public virtual simple_set<T> {
 protected:
     const int max;
     int current_size;
-    C comparitor;
+    C cmp;
     T *a;
     static const overflow err;
     
@@ -275,12 +275,12 @@ private:
         if(upper <= lower) return false;
         else {
             int mid = find_mid_index(upper, lower);
-            if(comparitor.equals(a[mid], item)) return true;
-            else if(comparitor.precedes(a[mid], item)) { 
+            if(cmp.equals(a[mid], item)) return true;
+            else if(cmp.precedes(a[mid], item)) { 
 		if (mid==lower) return false;
 		else { return has_value(upper, mid, item); }
             }
-            else if(comparitor.precedes(item, a[mid])) {
+            else if(cmp.precedes(item, a[mid])) {
            	if (mid == upper) return false;
                 else { return has_value(mid, lower, item); }
  	    }
@@ -289,7 +289,7 @@ private:
     }
 public:
     // and some methods
-    bin_search_simple_set(const int n): max(n), current_size(0), a(new T[max]), comparitor() {
+    bin_search_simple_set(const int n): max(n), current_size(0), a(new T[max]), cmp() {
         //constructor
     }
 
@@ -298,13 +298,13 @@ public:
 
     virtual bin_search_simple_set<T, C>& operator+=(const T item) {
 	if(current_size >= max) throw err;
-        if(comparitor.precedes(a[current_size - 1], item)) { a[current_size] = item; current_size++; }
+        if(cmp.precedes(a[current_size - 1], item)) { a[current_size] = item; current_size++; }
         else {
             bool shift_array = false;
             int insert_index = 0;
             for(int i = 0; i < current_size; i++) {
-                if(comparitor.equals(a[i], item)) break; // Does not accept equal values.
-                else if(comparitor.precedes(item, a[i])) { shift_array = true; insert_index = i; break; }
+                if(cmp.equals(a[i], item)) break; // Does not accept equal values.
+                else if(cmp.precedes(item, a[i])) { shift_array = true; insert_index = i; break; }
             }
             if (shift_array) {
 		    T val_to_enter = item;
@@ -324,7 +324,7 @@ public:
         bool shift_array = false;
         int delete_index = 0;
         for(int i = 0; i < current_size; i++) {
-            if(comparitor.equals(a[i], item)) { 
+            if(cmp.equals(a[i], item)) { 
                 shift_array = true; 
                 delete_index = i; 
                 break; 
@@ -375,6 +375,7 @@ class range {
     static const merge_fail merge_err;
     static const split_fail split_err;
 public:
+    //range() = default; 
     range(const T l, const bool lc, const T h, const bool hc)
             : L(l), Lc(lc), H(h), Hc(hc), cmp() {
         if (cmp.precedes(h, l) || (cmp.equals(l, h) && (!Lc || !Hc))) throw err;
@@ -387,6 +388,10 @@ public:
     bool contains(const T& item) const {
         return ((cmp.precedes(L, item) || (Lc && cmp.equals(L, item)))
                 && (cmp.precedes(item, H) || (Hc && cmp.equals(item, H))));
+    }
+
+    range<T,C> operator=(const range<T, C>& ran) {
+	return ran;
     }
     
     // You may also find it useful to define the following:
@@ -437,29 +442,28 @@ public:
     	}
     }
 
-    range* split(const range<T, C>& other) const {
+    range* lower_split(const range<T, C>& other) const {
     	//split the range into 2 by another range
-    	range ary [2]; 
-    	if (cmp.precedes(other.L, L) || cmp.precedes(H, other.H)){
+    	range ary[2];
+	if (cmp.precedes(other.L, L) || cmp.precedes(H, other.H)){
     		throw split_err;
-    	} else {
-    		T l1 = L;
-    		T h1 = other.L;
-    		bool lc1 = Lc;
-    		bool hc1 = other.Lc;
-    		ary[0] = range<T>(l1, lc1, h1, hc1);
+	}
+	T l1 = L;
+	T h1 = other.L;
+	bool lc1 = Lc;
+	bool hc1 = other.Lc;
+	return range<T>(l1, lc1, h1, hc1);
 
-    		T l2 = other.H;
-    		T h2 = H;
-    		bool lc2 = other.Hc;
-    		bool hc2 = Hc;
-    		ary[1] = range<T>(l2, lc2, h2, hc2);
-    	}
+	T l2 = other.H;
+	T h2 = H;
+	bool lc2 = other.Hc;
+	bool hc2 = Hc;
+	range<T> r2  = range<T>(l2, lc2, h2, hc2);
     	return ary;
     }
 
     range* split(const T item) const {
-    	range ary [2]; 
+    	range ary[2];
     	if (cmp.precedes(item, L) || cmp.precedes(H, item)){
     		throw split_err;
     	} else {
@@ -467,16 +471,23 @@ public:
     		T h1 = item;
     		bool lc1 = Lc;
     		bool hc1 = false;
-    		ary[0] = range<T>(l1, lc1, h1, hc1);
+    		range<T>* r1 = range<T>(l1, lc1, h1, hc1);
 
     		T l2 = item;
     		T h2 = H;
     		bool lc2 = false;
     		bool hc2 = Hc;
-    		ary[1] = range<T>(l2, lc2, h2, hc2);
+    		range<T>* r2 = range<T>(l2, lc2, h2, hc2);
     	}
-
     	return ary;
+    }
+
+    bool precedes(const range<T, C>& other) const {
+	return (cmp.precedes(L, other.L) || (cmp.equals(L, other.L) && !Lc && !other.Lc)) &&  (cmp.precedes(H, other.H) || (cmp.equals(H, other.H) && !Hc && !other.Hc));
+    }
+
+    bool equals(const range<T, C>& other) const {
+	return cmp.equals(L, other.L) && cmp.equals(H, other.H) && (Lc == other.Lc) && (Hc == other.Hc);
     }
     const T L;      // represents all elements from L
     const bool Lc;  // inclusive?
@@ -484,22 +495,6 @@ public:
     const bool Hc;  // inclusive?
 };
 
-// Assuming (l,h) != [l+1, h-1]
-template<typename T, typename C=comp<T>>
-class range_comp {
-    const C cmp = new comp<T>;
-    // Assuming precedes means strictly precedes: ranges contain no common element.
-    bool precedes(const range<T, C> r1, const range<T, C> r2) {
-        if(cmp.precedes(r1.H, r2.L)) return true; 
-        else if(cmp.equals(r1.H, r2.L) && (!r1.Hc || !r2.Lc)) return true;
-	return false;
-    }
-    bool equals(const range<T, C> r1, const range<T, C> r2) {
-	return (cmp.equals(r1.L, r2.L) && cmp.equals(r1.H, r2.H) && (r1.Lc == r2.Lc) && (r1.Hc == r2.Hc));
-    }
-
-
-};
 
 // You may find it useful to define derived types with two-argument
 // constructors that embody the four possible combinations of open and
@@ -653,59 +648,34 @@ public:
 //---------------------------------------------------------------
 
 // insert an appropriate bin_search_range_set declaration here
-template<typename T, typename C = comp<T>, typename R = range<T, C>, typename RC = range_comp<T,C>>
-class bin_search_range_set : public virtual range_set<T, C>, public bin_search_simple_set<R, RC>{
-    range_comp<T, C> range_cmp;
+template<typename T, typename C = comp<T>>
+class bin_search_range_set : public virtual range_set<T, C>, public bin_search_simple_set<T, C>{
+    const int max;
+    range<T,C>* ranges;
+    int current_num_elem; // basically current_size from above
 public:
-	bin_search_range_set(const int num) : bin_search_simple_set<R, RC>(num), range_cmp() {
+	bin_search_range_set(const int num) : bin_search_simple_set<T, C>(num), max(num), /*ranges(new range<T,C>[num]),*/ current_num_elem(0) {
 	}
-	virtual bin_search_simple_set<R>& operator+=(const R item){
-		return bin_search_simple_set<R>::operator+=(item);
+	virtual bin_search_simple_set<T>& operator+=(const T item){
+		return bin_search_simple_set<T>::operator+=(item);
 	}
-	virtual bin_search_simple_set<R>& operator-=(const R item){
-		return bin_search_simple_set<R>::operator-=(item);
+	virtual bin_search_simple_set<T>& operator-=(const T item){
+		return bin_search_simple_set<T>::operator-=(item);
 	}
-	virtual bool contains(const R& item) const {
-            	 return bin_search_simple_set<R>::contains(item);
+	// Need to change this.
+	virtual bool contains(const T& item) const {
+            	 return bin_search_simple_set<T>::contains(item);
         }
         virtual bin_search_range_set<T>& operator+=(const range<T, C> r) {
-	    if(bin_search_simple_set<R, RC>::current_size >= bin_search_simple_set<R, RC>::max) throw bin_search_simple_set<R, RC>::err;
-            if(range_cmp.precedes(bin_search_simple_set<R, RC>::a[bin_search_simple_set<R, RC>::current_size - 1], r)) { 
-		bin_search_simple_set<R, RC>::a[bin_search_simple_set<R, RC>::current_size] = r; 
-		bin_search_simple_set<R, RC>::current_size++; 
+		//if (current_num_elem == max) throw bin_search_simple_set<T, C>::err;
+		if(current_num_elem == 0 /*|| ranges[current_num_elem].precedes(r)*/) {
+		//	ranges[current_num_elem] = r;
+		}
 		return *this;
-	    }
- 	    range<T, C> c_range = r;
-	    for(int i = 0; i < bin_search_simple_set<R, RC>::current_size; i++) {
-	        if(c_range.overlaps(bin_search_simple_set<R, RC>::a[i])) {
-                    c_range = r.merge(bin_search_simple_set<R, RC>::a[i]);
-            	    *this += c_range;
-		    break;
-                }
-            }        
-            return *this;
         }
         virtual bin_search_range_set<T>& operator-=(const range<T, C> r) {
-	    if(bin_search_simple_set<R, RC>::current_size == 0) return *this;
-	    range<T,C>* c_ranges;
-	    for(int i = 0; i < bin_search_simple_set<R, RC>::current_size; i++) {
-	        if(range_cmp.equals(r, bin_search_simple_set<R, RC>::a[i])) { 
-			*this -= bin_search_simple_set<R, RC>::a[i]; 
-			return *this; 
-		}
-                if(r.overlaps(bin_search_simple_set<R, RC>::a[i])) {
-	            c_ranges = r.split(bin_search_simple_set<R, RC>::a[i]);
-		    *this -= bin_search_simple_set<R, RC>::a[i];
-	            *this += c_ranges[0];
-		    *this += c_ranges[1];
-		}
-  	    }   
             return *this;
 	}
- 
-        bool contains(const range<T, C>& r) {
-		return bin_search_simple_set<R, RC>::contains(r);
-        }
 };
 
 //===============================================================
@@ -786,6 +756,8 @@ int main() {
     // cout << "\n";
 
 
+    range_set<int>* Bin = new bin_search_range_set<int>(10);
+//    *Bin += range<int>(5, true, 8, false);
 
     //cout << std::is_integral<weekday>::value << std::endl;
 /*
@@ -826,15 +798,15 @@ int main() {
 
     cout << "\n"; 
 
-
+/*
     range<double> r1 = range<double>(128.0, true, 152.4, true);
     range<double> r2 = range<double>(128.0, false, 152.4, false);
 
-    range<double> results = r1.merge(r2);
+    range<double>* results = r1.split(r2);
 
-    cout << results.L << ", " << results.Lc << ", " << results.H << ", " << results.Hc << "\n";
+    cout << results[0].L << ", " << results[0].Lc << ", " << results[0].H << ", " << results[0].Hc << "\n";
 
-/*    range_set<double>* V_b = new bin_search_range_set<double>(10);
+    range_set<double>* V_b = new bin_search_range_set<double>(10);
     range<double> r1 = range<double>(128.0, true, 152.4, true);
     *V_b += r1;
     *V_b += range<double>(130.0, false, 150.2, false );
@@ -855,6 +827,38 @@ int main() {
     cout << "tue is " << (V_r->contains(tue)? "" : "not ") << "in V_r\n";
     cout << "wed is " << (V_r->contains(wed)? "" : "not ") << "in V_r\n";
     cout << "thu is " << (V_r->contains(thu)? "" : "not ") << "in V_r\n";
+    cout << "fri is " << (V_r->contains(fri)? "" : "not ") << "in V_r\n";
+    cout << "\n";
+    *V_r -= range<weekday>(wed, true, fri, false);
+    cout << "mon is " << (V_r->contains(mon)? "" : "not ") << "in V_r\n";
+    cout << "tue is " << (V_r->contains(tue)? "" : "not ") << "in V_r\n";
+    cout << "wed is " << (V_r->contains(wed)? "" : "not ") << "in V_r\n";
+    cout << "thu is " << (V_r->contains(thu)? "" : "not ") << "in V_r\n";
+    cout << "fri is " << (V_r->contains(fri)? "" : "not ") << "in V_r\n";
+    cout << "\n";
+*/
+/*
+    // B -= 500;
+    // cout << "500 is " << (H.contains(500)? "" : "not ") << "in H\n";
+    B += 5000;
+    cout << "5000 is " << (B.contains(5000)? "" : "not ") << "in B\n";
+    cout << "500 is " << (B.contains(500)? "" : "not ") << "in B\n";
+*/
+/*
+    range<string> r1("a", true, "f", true);
+    cout << "\"b\" is " << (r1.contains("b") ? "" : "not ") << "in r1\n";
+    cout << "\"aaa\" is " << (r1.contains("aaa") ? "" : "not ") << "in r1\n";
+    cout << "\"faa\" is " << (r1.contains("faa") ? "" : "not ") << "in r1\n";
+
+    range<const char*, lexico_less> r2("a", true, "f", true);
+    cout << "\"b\" is " << (r2.contains("b") ? "" : "not ") << "in r2\n";
+    cout << "\"aaa\" is " << (r2.contains("aaa") ? "" : "not ") << "in r2\n";
+    cout << "\"faa\" is " << (r2.contains("faa") ? "" : "not ") << "in r2\n";
+    */
+
+    // The following will not work correctly yet:
+/*
+    range_set<int>* X = new std_range_set<int>();
     cout << "fri is " << (V_r->contains(fri)? "" : "not ") << "in V_r\n";
     cout << "\n";
     *V_r -= range<weekday>(wed, true, fri, false);
