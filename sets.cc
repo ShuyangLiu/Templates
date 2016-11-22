@@ -671,6 +671,34 @@ public:
 		if (current_num_elem == max) throw bin_search_simple_set<T, C>::err;
 		if(current_num_elem == 0 || ranges[current_num_elem].precedes(r)) {
 			ranges[current_num_elem] = r;
+			current_num_elem++;
+		}
+		range<T,C> range_of_interest = r;
+		for(int i = 0; i < current_num_elem; i++) {
+			if(range_of_interest.precedes(ranges[i])) { 
+				// insert range at i 
+				
+				// shift array up by 1
+				current_num_elem++;
+				return *this;
+			}
+			else if(range_of_interest.equals(ranges[i])){
+				// ignore range_of_interest because it is a repeat.
+				return *this;
+			}
+			else if(range_of_interest.overlaps(ranges[i])) {
+				// merge ranges
+				range_of_interest = range_of_interest.merge(ranges[i])
+				// remove old range.
+				
+				// continue through for loop, because this range may now be larger than other ranges we have in the array currently. 
+				// For example, if our array consists of the following ranges: { (0, 2), (3, 7], [30, 52), (52, 67) }, and we want
+				// to insert (3, 63), we need to merge (3, 7], [30, 52), (52, 67) with (3, 63).
+				
+				// when all relevant ranges have been merged, add resulting range (maybe outside of this if statement?)
+
+			}
+			
 		}
 		return *this;
         }
