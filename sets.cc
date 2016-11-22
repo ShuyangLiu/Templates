@@ -375,10 +375,9 @@ class range {
     static const merge_fail merge_err;
     static const split_fail split_err;
 public:
-    //range() = default; 
-    range(const T l, const bool lc, const T h, const bool hc)
+    range(const T l = NULL, const bool lc = NULL, const T h = NULL, const bool hc = NULL)
             : L(l), Lc(lc), H(h), Hc(hc), cmp() {
-        if (cmp.precedes(h, l) || (cmp.equals(l, h) && (!Lc || !Hc))) throw err;
+        if ((l != NULL) && (h != NULL) && (cmp.precedes(h, l) || (cmp.equals(l, h) && (!Lc || !Hc)))) throw err;
     }
     // no destructor needed
     T low() const { return L; }
@@ -654,7 +653,7 @@ class bin_search_range_set : public virtual range_set<T, C>, public bin_search_s
     range<T,C>* ranges;
     int current_num_elem; // basically current_size from above
 public:
-	bin_search_range_set(const int num) : bin_search_simple_set<T, C>(num), max(num), /*ranges(new range<T,C>[num]),*/ current_num_elem(0) {
+	bin_search_range_set(const int num) : bin_search_simple_set<T, C>(num), max(num), ranges(new range<T,C>[num]), current_num_elem(0) {
 	}
 	virtual bin_search_simple_set<T>& operator+=(const T item){
 		return bin_search_simple_set<T>::operator+=(item);
@@ -667,9 +666,9 @@ public:
             	 return bin_search_simple_set<T>::contains(item);
         }
         virtual bin_search_range_set<T>& operator+=(const range<T, C> r) {
-		//if (current_num_elem == max) throw bin_search_simple_set<T, C>::err;
-		if(current_num_elem == 0 /*|| ranges[current_num_elem].precedes(r)*/) {
-		//	ranges[current_num_elem] = r;
+		if (current_num_elem == max) throw bin_search_simple_set<T, C>::err;
+		if(current_num_elem == 0 || ranges[current_num_elem].precedes(r)) {
+			ranges[current_num_elem] = r;
 		}
 		return *this;
         }
@@ -757,7 +756,7 @@ int main() {
 
 
     range_set<int>* Bin = new bin_search_range_set<int>(10);
-//    *Bin += range<int>(5, true, 8, false);
+    *Bin += range<int>(5, true, 8, false);
 
     //cout << std::is_integral<weekday>::value << std::endl;
 /*
